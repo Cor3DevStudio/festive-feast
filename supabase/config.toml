@@ -1,0 +1,8 @@
+# Edge Function config: skip platform JWT check so our function can validate the user JWT itself.
+# create-qrph-payment validates the Bearer token with adminClient.auth.getUser(token).
+[functions.create-qrph-payment]
+verify_jwt = false
+
+# Webhook is called by PayMongo, no user JWT.
+[functions.paymongo-webhook]
+verify_jwt = false

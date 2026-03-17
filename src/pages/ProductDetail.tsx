@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, Truck, ShieldCheck, Share2, Heart } from "lucide-react";
 import { getProductBySlug, formatPrice } from "@/data/products";
 import { getProductImage } from "@/data/productImages";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
@@ -12,6 +13,7 @@ import Footer from "@/components/Footer";
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { addItem } = useCart();
   const { toast } = useToast();
   const product = getProductBySlug(slug || "");
@@ -38,6 +40,11 @@ export default function ProductDetail() {
   const image = getProductImage(product.id);
 
   function handleAddToCart() {
+    if (!isAuthenticated) {
+      toast({ title: "Please log in first", description: "Sign in to add items to your cart.", variant: "destructive" });
+      navigate(`/login?returnTo=${encodeURIComponent(`/product/${product.slug}`)}`);
+      return;
+    }
     if (product.sizes.length > 1 && !selectedSize) {
       toast({ title: "Please select product variation first", variant: "destructive" });
       return;
@@ -48,6 +55,11 @@ export default function ProductDetail() {
   }
 
   function handleBuyNow() {
+    if (!isAuthenticated) {
+      toast({ title: "Please log in first", description: "Sign in to buy now.", variant: "destructive" });
+      navigate(`/login?returnTo=${encodeURIComponent(`/product/${product.slug}`)}`);
+      return;
+    }
     if (product.sizes.length > 1 && !selectedSize) {
       toast({ title: "Please select product variation first", variant: "destructive" });
       return;

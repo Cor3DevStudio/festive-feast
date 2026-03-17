@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
-import { Phone, Mail, ShoppingCart } from "lucide-react";
+import { Phone, Mail, ShoppingCart, LogIn, LogOut } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { Button } from "@/components/ui/button";
 
 export default function Header() {
+  const { isAuthenticated, signOut, user } = useAuth();
   const { totalItems } = useCart();
 
   return (
@@ -39,18 +42,38 @@ export default function Header() {
               Shop
             </Link>
           </nav>
-          <Link
-            to="/cart"
-            className="relative flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            <span className="hidden sm:inline">Cart</span>
-            {totalItems > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                {totalItems}
+          <div className="flex items-center gap-3">
+            {isAuthenticated ? (
+              <span className="hidden text-sm text-muted-foreground sm:inline">
+                {user?.email}
               </span>
+            ) : null}
+            {isAuthenticated ? (
+              <Button variant="ghost" size="sm" onClick={() => signOut()} className="text-muted-foreground">
+                <LogOut className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Sign out</span>
+              </Button>
+            ) : (
+              <Link to="/login">
+                <Button variant="ghost" size="sm" className="text-muted-foreground">
+                  <LogIn className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Log in</span>
+                </Button>
+              </Link>
             )}
-          </Link>
+            <Link
+              to="/cart"
+              className="relative flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              <span className="hidden sm:inline">Cart</span>
+              {totalItems > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
       </div>
     </header>

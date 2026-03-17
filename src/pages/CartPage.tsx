@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Minus, Plus, X } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/data/products";
 import { getProductImage } from "@/data/productImages";
@@ -7,9 +8,29 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, subtotal } = useCart();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { items, removeItem, updateQuantity, subtotal, cartLoading } = useCart();
 
-  if (items.length === 0) {
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-6 py-20 text-center">
+          <h1 className="font-display text-2xl font-semibold text-foreground">Sign in to view your cart</h1>
+          <p className="mt-2 text-muted-foreground">Your cart is saved to your account when you log in.</p>
+          <Link
+            to="/login?returnTo=/cart"
+            className="mt-6 inline-block rounded-md bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Log in
+          </Link>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (items.length === 0 && !cartLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
