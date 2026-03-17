@@ -1,9 +1,9 @@
+import { supabase } from "@/lib/supabase";
+
 export interface CreateQrPhPaymentParams {
   order_id: string;
   amount_cents: number;
   billing: { name: string; email: string; phone?: string; address?: string };
-  /** Required: pass session.access_token from AuthContext. getSession() can be null on first load. */
-  accessToken: string;
 }
 
 export interface CreateQrPhPaymentResult {
@@ -12,42 +12,64 @@ export interface CreateQrPhPaymentResult {
   order_id: string;
 }
 
+/**
+ * Creates a QR Ph payment via create-qrph-payment Edge Function.
+ * - In dev: uses Supabase client invoke (Vite proxy handles CORS).
+ * - In production: calls same-origin /api/create-qrph-payment so the server
+ *   forwards the request with correct anon key and user JWT (avoids 401).
+ */
 export async function createQrPhPayment(
   params: CreateQrPhPaymentParams
 ): Promise<{ data: CreateQrPhPaymentResult | null; error: Error | null }> {
-  const { accessToken: token, ...body } = params;
+  if (import.meta.env.DEV) {
+    const { data, error } = await supabase.functions.invoke("create-qrph-payment", {
+      body: params,
+    });
+    if (error) {
+      return { data: null, error: new Error(error.message ?? "Request failed") };
+    }
+    const result = data as CreateQrPhPaymentResult | { error?: string } | null;
+    if (result && "error" in result && result.error) {
+      return { data: null, error: new Error(result.error) };
+    }
+    if (!result || !("qr_image_url" in result)) {
+      return { data: null, error: new Error("Invalid response") };
+    }
+    return { data: result as CreateQrPhPaymentResult, error: null };
+  }
+
+  // Production: same-origin proxy so Vercel server adds anon key and forwards JWT
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const token = session?.access_token;
   if (!token) {
     return { data: null, error: new Error("Not authenticated") };
   }
 
-  // In dev, use same-origin proxy to avoid CORS (vite.config server.proxy)
-  const base =
-    import.meta.env.DEV
-      ? ""
-      : (import.meta.env.VITE_SUPABASE_URL ?? "");
-  const path = import.meta.env.DEV
-    ? "/api/supabase-functions/v1/create-qrph-payment"
-    : "/functions/v1/create-qrph-payment";
-  const url = `${base}${path}`;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  if (anonKey) headers["apikey"] = anonKey;
-
-  const res = await fetch(url, {
+  const res = await fetch("/api/create-qrph-payment", {
     method: "POST",
-    headers,
-    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(params),
   });
 
-  const json = await res.json().catch(() => ({}));
+  const result = (await res.json().catch(() => ({}))) as
+    | CreateQrPhPaymentResult
+    | { error?: string };
   if (!res.ok) {
     return {
       data: null,
-      error: new Error(json?.error ?? `Request failed (${res.status})`),
+      error: new Error((result as { error?: string }).error ?? `Request failed (${res.status})`),
     };
   }
-  return { data: json as CreateQrPhPaymentResult, error: null };
+  if (result && "error" in result && result.error) {
+    return { data: null, error: new Error(result.error) };
+  }
+  if (!result || !("qr_image_url" in result)) {
+    return { data: null, error: new Error("Invalid response") };
+  }
+  return { data: result as CreateQrPhPaymentResult, error: null };
 }

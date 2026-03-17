@@ -119,8 +119,7 @@ export default function CheckoutPage() {
       );
 
       if (payment === "qrph") {
-        const token = session?.access_token;
-        if (!token) {
+        if (!session?.access_token) {
           setErrors({
             payment: "Session expired. Please sign in again and retry.",
           });
@@ -136,7 +135,6 @@ export default function CheckoutPage() {
             phone: form.phone || undefined,
             address: form.address || undefined,
           },
-          accessToken: token,
         });
         if (qrError || !qrData?.qr_image_url) {
           setErrors({

@@ -46,10 +46,12 @@ Set Supabase secrets (Dashboard → Edge Functions → Secrets or CLI):
 ## 4. Deploy the frontend to Vercel
 
 ```bash
-npx vercel --prod
+npm run deploy
 ```
 
-Or push to Git if the project is connected to Vercel; it will build and deploy automatically.
+Or `npx vercel --prod`. After any code changes, run `npm run deploy` again to redeploy.
+
+**Auto-deploy on push:** If the project is connected to a Git repo in Vercel (Settings → Git), every push to the production branch builds and deploys automatically—no need to run `npm run deploy` manually.
 
 ## 5. After deploy
 
