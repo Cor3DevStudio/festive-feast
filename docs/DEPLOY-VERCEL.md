@@ -17,7 +17,8 @@ In Vercel Dashboard → your project → **Settings → Environment Variables**,
 | Name | Value | Notes |
 |------|--------|------|
 | `VITE_SUPABASE_URL` | `https://YOUR_PROJECT_REF.supabase.co` | From Supabase Dashboard → Settings → API |
-| `VITE_SUPABASE_ANON_KEY` | Your anon (public) key | Same place; never use service_role in frontend |
+| `VITE_SUPABASE_ANON_KEY` | Your anon (public) key | Same place |
+| `SUPABASE_SERVICE_ROLE_KEY` | Your **service_role** key | Same place; **required** for QR Ph proxy (server-only, never exposed to browser) |
 
 Apply to **Production**, **Preview**, and **Development** if you use preview deploys.
 
@@ -56,4 +57,5 @@ Or `npx vercel --prod`. After any code changes, run `npm run deploy` again to re
 ## 5. After deploy
 
 - Open the Vercel URL and test login, cart, and checkout.
-- If QR Ph still returns 401, ensure the Edge Functions were deployed with `verify_jwt = false` (via `config.toml` or `--no-verify-jwt`).
+- **QR Ph flow:** The Vercel API route validates your JWT and calls the Edge Function with the service role + `user_id`, so 401 from “JWT not reaching Supabase” is fixed. Ensure `SUPABASE_SERVICE_ROLE_KEY` is set in Vercel.
+- Redeploy the Edge Function after any change: `supabase functions deploy create-qrph-payment`.

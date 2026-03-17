@@ -1,7 +1,7 @@
 // Supabase Edge Function: creates PayMongo Payment Intent + QR Ph, returns QR image.
 // Set secrets: PAYMONGO_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY (for updating order).
 // Invoke with: { order_id, amount_cents, billing: { name, email, phone?, address? } }
-// Authorization header must be the Supabase JWT (user token).
+// Authorization: either (1) user JWT, or (2) service_role key with body.user_id (trusted server proxy).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -24,6 +24,7 @@ interface ReqBody {
   order_id: string;
   amount_cents: number;
   billing: Billing;
+  user_id?: string; // required when Authorization is service_role (trusted proxy)
 }
 
 function paymongoFetch(
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
     }
 
     const body = (await req.json()) as ReqBody;
-    const { order_id, amount_cents, billing } = body;
+    const { order_id, amount_cents, billing, user_id: bodyUserId } = body;
     if (!order_id || amount_cents == null || !billing?.name || !billing?.email) {
       return new Response(
         JSON.stringify({ error: "Missing order_id, amount_cents, or billing (name, email)" }),
@@ -76,19 +77,27 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-      error: userError,
-    } = await adminClient.auth.getUser(token);
-    if (userError || !user) {
-      const message = userError?.message?.includes("JWT")
-        ? "Invalid or expired session. Please log in again."
-        : "Unauthorized";
-      return new Response(JSON.stringify({ error: message }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    let userId: string;
+
+    if (token === serviceRoleKey && bodyUserId) {
+      // Trusted server proxy (e.g. Vercel) already validated the user and sent user_id
+      userId = bodyUserId;
+    } else {
+      const {
+        data: { user },
+        error: userError,
+      } = await adminClient.auth.getUser(token);
+      if (userError || !user) {
+        const message = userError?.message?.includes("JWT")
+          ? "Invalid or expired session. Please log in again."
+          : "Unauthorized";
+        return new Response(JSON.stringify({ error: message }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = user.id;
     }
     const { data: order, error: orderError } = await adminClient
       .from("orders")
@@ -101,7 +110,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (order.user_id !== user.id) {
+    if (order.user_id !== userId) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

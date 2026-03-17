@@ -47,11 +47,13 @@ export async function createQrPhPayment(
     return { data: null, error: new Error("Not authenticated") };
   }
 
+  const bearer = `Bearer ${token}`;
   const res = await fetch("/api/create-qrph-payment", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: bearer,
+      "X-Authorization": bearer,
     },
     body: JSON.stringify(params),
   });
