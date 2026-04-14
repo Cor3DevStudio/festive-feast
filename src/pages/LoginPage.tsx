@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,19 +12,48 @@ import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
+  const hasReturnTo = searchParams.has("returnTo");
   const returnTo = searchParams.get("returnTo") || "/shop";
+  const tabParam = searchParams.get("tab");
   const navigate = useNavigate();
-  const { signIn, signUp, isAuthenticated } = useAuth();
+  const { signIn, signUp, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [activeTab, setActiveTab] = useState<"login" | "signup">(
+    tabParam === "signup" ? "signup" : "login"
+  );
 
-  if (isAuthenticated) {
-    navigate(returnTo, { replace: true });
-    return null;
+  /** Prevents the "already logged in" redirect from racing ahead of handleLogin's admin check (which would flash /shop). */
+  const pendingLoginRedirectRef = useRef(false);
+
+  useEffect(() => {
+    if (tabParam === "signup") setActiveTab("signup");
+    else if (tabParam === "login") setActiveTab("login");
+  }, [tabParam]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (isAuthenticated && !pendingLoginRedirectRef.current) {
+      navigate(returnTo, { replace: true });
+    }
+  }, [authLoading, isAuthenticated, navigate, returnTo]);
+
+  if (authLoading) return null;
+  if (isAuthenticated && !pendingLoginRedirectRef.current) return null;
+
+  if (isAuthenticated && pendingLoginRedirectRef.current) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto flex min-h-[50vh] items-center justify-center px-6 py-16">
+          <p className="text-sm text-muted-foreground">Signing you in…</p>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -32,14 +62,44 @@ export default function LoginPage() {
       toast({ title: "Email and password required", variant: "destructive" });
       return;
     }
+    pendingLoginRedirectRef.current = true;
     setLoading(true);
     const { error } = await signIn(email.trim(), password);
     setLoading(false);
     if (error) {
+      pendingLoginRedirectRef.current = false;
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
       return;
     }
     toast({ title: "Welcome back!" });
+
+    // Respect explicit return destinations (e.g. checkout or /admin links).
+    if (hasReturnTo) {
+      pendingLoginRedirectRef.current = false;
+      navigate(returnTo, { replace: true });
+      return;
+    }
+
+    // If no returnTo was provided, send admins directly to the admin dashboard.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user?.id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile?.is_admin) {
+        pendingLoginRedirectRef.current = false;
+        navigate("/admin", { replace: true });
+        return;
+      }
+    }
+
+    pendingLoginRedirectRef.current = false;
     navigate(returnTo, { replace: true });
   }
 

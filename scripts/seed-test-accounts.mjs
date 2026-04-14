@@ -47,29 +47,59 @@ const supabase = createClient(url, serviceRoleKey, {
 });
 
 const TEST_ACCOUNTS = [
-  { email: "buyer@test.com", password: "TestBuyer123!" },
-  { email: "paytest@test.com", password: "PayTest456!" },
+  { email: "buyer@test.com", password: "TestBuyer123!", isAdmin: false, fullName: "Buyer Test" },
+  { email: "paytest@test.com", password: "PayTest456!", isAdmin: false, fullName: "Payment Tester" },
+  { email: "admin@test.com", password: "AdminTest789!", isAdmin: true, fullName: "Admin Test" },
 ];
 
 async function main() {
   console.log("Creating test accounts...\n");
-  for (const { email, password } of TEST_ACCOUNTS) {
+  for (const { email, password, isAdmin, fullName } of TEST_ACCOUNTS) {
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     });
+    let userId = data?.user?.id;
+
+    if (!userId && error?.message.includes("already been registered")) {
+      const { data: usersPage, error: listErr } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 200,
+      });
+      if (!listErr) {
+        userId = usersPage?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase())?.id;
+      }
+    }
+
+    if (userId) {
+      const username = email.split("@")[0];
+      const { error: profileUpsertError } = await supabase.from("profiles").upsert(
+        {
+          id: userId,
+          full_name: fullName,
+          username,
+          is_admin: isAdmin,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      );
+      if (profileUpsertError) {
+        console.error(`  ${email} – failed to upsert profile: ${profileUpsertError.message}`);
+      }
+    }
+
     if (error) {
       if (error.message.includes("already been registered")) {
-        console.log(`  ${email} – already exists (use same password to log in)`);
+        console.log(`  ${email} – already exists (profile synced)`);
       } else {
         console.error(`  ${email} – error:`, error.message);
       }
     } else {
-      console.log(`  ${email} – created`);
+      console.log(`  ${email} – created${isAdmin ? " (admin)" : ""}`);
     }
   }
-  console.log("\nTest accounts (use these to log in and test payment):");
+  console.log("\nTest accounts (use these to log in and test payment/admin):");
   console.log("────────────────────────────────────────");
   TEST_ACCOUNTS.forEach(({ email, password }) => console.log(`  ${email}  /  ${password}`));
   console.log("────────────────────────────────────────");

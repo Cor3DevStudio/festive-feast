@@ -1,15 +1,16 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { products } from "@/data/products";
+import { useProducts } from "@/context/ProductsContext";
 import HeroSection from "@/components/HeroSection";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import ProductCard from "@/components/ProductCard";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-const featured = products.slice(0, 6);
-
 export default function Index() {
+  const { products, productsLoading } = useProducts();
+  const featured = products.slice(0, 6);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -35,9 +36,19 @@ export default function Index() {
           </div>
 
           <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((p, i) => (
-              <ProductCard key={p.id} product={p} index={i} />
-            ))}
+            {productsLoading
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="aspect-square rounded-lg bg-muted" />
+                    <div className="mt-4 space-y-2">
+                      <div className="h-4 w-3/4 rounded bg-muted" />
+                      <div className="h-4 w-1/3 rounded bg-muted" />
+                    </div>
+                  </div>
+                ))
+              : featured.map((p, i) => (
+                  <ProductCard key={p.id} product={p} index={i} />
+                ))}
           </div>
 
           <div className="mt-8 text-center sm:hidden">

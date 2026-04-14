@@ -1,19 +1,32 @@
-import { useState, useMemo } from "react";
-import { products, categories } from "@/data/products";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { categories } from "@/data/products";
+import { useProducts } from "@/context/ProductsContext";
 import ProductCard from "@/components/ProductCard";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
+const CATEGORY_VALUES = new Set(categories.map((c) => c.value));
+
 export default function ShopPage() {
+  const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+  const { products, productsLoading } = useProducts();
+
+  useEffect(() => {
+    const q = searchParams.get("category");
+    if (q && CATEGORY_VALUES.has(q)) {
+      setActiveCategory(q);
+    }
+  }, [searchParams]);
 
   const filtered = useMemo(() => {
     let list = activeCategory === "all" ? products : products.filter((p) => p.category === activeCategory);
     if (sortBy === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sortBy === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [activeCategory, sortBy]);
+  }, [activeCategory, sortBy, products]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,7 +64,19 @@ export default function ShopPage() {
         </div>
 
         {/* Grid */}
-        {filtered.length === 0 ? (
+        {productsLoading ? (
+          <div className="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-square rounded-lg bg-muted" />
+                <div className="mt-4 space-y-2">
+                  <div className="h-4 w-3/4 rounded bg-muted" />
+                  <div className="h-4 w-1/3 rounded bg-muted" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-lg font-medium text-foreground">No products match your filters</p>
             <p className="mt-1 text-sm text-muted-foreground">Try adjusting your category or clearing filters.</p>

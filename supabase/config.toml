@@ -3,6 +3,9 @@
 [functions.create-qrph-payment]
 verify_jwt = false
 
+[functions.check-qrph-payment]
+verify_jwt = false
+
 # Webhook is called by PayMongo, no user JWT.
 [functions.paymongo-webhook]
 verify_jwt = false

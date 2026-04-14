@@ -17,7 +17,10 @@ interface Billing {
   name: string;
   email: string;
   phone?: string;
-  address?: string;
+  street?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
 }
 
 interface ReqBody {
@@ -165,14 +168,16 @@ Deno.serve(async (req) => {
       email: billing.email,
     };
     if (billing.phone) billingAttrs.phone = billing.phone;
-    if (billing.address)
+    // Only include address when all required sub-fields are non-empty
+    if (billing.street && billing.city && billing.province && billing.postalCode) {
       billingAttrs.address = {
-        line1: billing.address,
-        city: "",
-        state: "",
-        postal_code: "",
+        line1: billing.street,
+        city: billing.city,
+        state: billing.province,
+        postal_code: billing.postalCode,
         country: "PH",
       };
+    }
 
     const createPmRes = await paymongoFetch("/payment_methods", secretKey, {
       method: "POST",

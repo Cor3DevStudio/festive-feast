@@ -43,7 +43,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const envSite = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "").trim();
+    const origin =
+      envSite || (typeof window !== "undefined" ? window.location.origin : "");
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      ...(origin
+        ? {
+            options: {
+              emailRedirectTo: `${origin}/login`,
+            },
+          }
+        : {}),
+    });
     return { error: error ?? null };
   }, []);
 

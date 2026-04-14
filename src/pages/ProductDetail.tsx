@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, Truck, ShieldCheck, Share2, Heart } from "lucide-react";
-import { getProductBySlug, formatPrice } from "@/data/products";
+import { formatPrice } from "@/data/products";
 import { getProductImage } from "@/data/productImages";
+import { cartLineKey } from "@/lib/cartLineKey";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { useProducts } from "@/context/ProductsContext";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -15,12 +17,44 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addItem } = useCart();
+  const { getProductBySlug, productsLoading } = useProducts();
   const { toast } = useToast();
   const product = getProductBySlug(slug || "");
 
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [descOpen, setDescOpen] = useState(false);
+
+  useEffect(() => {
+    if (!product) return;
+    if (product.sizes.length === 1) {
+      setSelectedSize(product.sizes[0]);
+    } else {
+      setSelectedSize("");
+    }
+  }, [product?.id]);
+
+  if (productsLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-6 py-10">
+          <div className="grid gap-12 lg:grid-cols-5 animate-pulse">
+            <div className="lg:col-span-3">
+              <div className="aspect-square rounded-lg bg-muted" />
+            </div>
+            <div className="lg:col-span-2 space-y-4">
+              <div className="h-8 w-3/4 rounded bg-muted" />
+              <div className="h-6 w-1/3 rounded bg-muted" />
+              <div className="h-4 w-full rounded bg-muted" />
+              <div className="h-4 w-5/6 rounded bg-muted" />
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -39,34 +73,44 @@ export default function ProductDetail() {
 
   const image = getProductImage(product.id);
 
+  function resolvedProduct() {
+    const size = selectedSize || product.sizes[0];
+    if (product.sizePrices && size && product.sizePrices[size] !== undefined) {
+      return { ...product, price: product.sizePrices[size] };
+    }
+    return product;
+  }
+
   function handleAddToCart() {
     if (!isAuthenticated) {
       toast({ title: "Please log in first", description: "Sign in to add items to your cart.", variant: "destructive" });
       navigate(`/login?returnTo=${encodeURIComponent(`/product/${product.slug}`)}`);
       return;
     }
-    if (product.sizes.length > 1 && !selectedSize) {
+    if (product.sizes.length > 0 && !selectedSize) {
       toast({ title: "Please select product variation first", variant: "destructive" });
       return;
     }
     const size = selectedSize || product.sizes[0];
-    addItem(product, size, quantity);
+    addItem(resolvedProduct(), size, quantity);
     toast({ title: `${product.name} added to cart`, description: `${size} × ${quantity}` });
   }
 
-  function handleBuyNow() {
+  async function handleBuyNow() {
     if (!isAuthenticated) {
       toast({ title: "Please log in first", description: "Sign in to buy now.", variant: "destructive" });
       navigate(`/login?returnTo=${encodeURIComponent(`/product/${product.slug}`)}`);
       return;
     }
-    if (product.sizes.length > 1 && !selectedSize) {
+    if (product.sizes.length > 0 && !selectedSize) {
       toast({ title: "Please select product variation first", variant: "destructive" });
       return;
     }
     const size = selectedSize || product.sizes[0];
-    addItem(product, size, quantity);
-    navigate("/checkout");
+    await addItem(resolvedProduct(), size, quantity);
+    navigate("/checkout", {
+      state: { lineKeys: [cartLineKey(product.id, size)] },
+    });
   }
 
   return (
@@ -115,7 +159,9 @@ export default function ProductDetail() {
               </h1>
 
               <p className="mt-3 font-mono-price text-xl text-foreground">
-                {product.priceRange
+                {product.sizePrices && selectedSize
+                  ? formatPrice(product.sizePrices[selectedSize] ?? product.price)
+                  : product.priceRange
                   ? `${formatPrice(product.priceRange[0])} – ${formatPrice(product.priceRange[1])}`
                   : formatPrice(product.price)}
               </p>
