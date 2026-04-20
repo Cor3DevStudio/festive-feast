@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { establishSessionFromEmailCallbackUrl, stripAuthCallbackFromBrowserUrl } from "@/lib/authEmailCallback";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +23,8 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">(
     tabParam === "signup" ? "signup" : "login"
@@ -33,6 +37,25 @@ export default function LoginPage() {
     if (tabParam === "signup") setActiveTab("signup");
     else if (tabParam === "login") setActiveTab("login");
   }, [tabParam]);
+
+  /** Email confirmation links (PKCE ?code= or legacy hash tokens). */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (typeof window === "undefined") return;
+      const { attempted, ok, error } = await establishSessionFromEmailCallbackUrl(window.location.href);
+      if (cancelled || !attempted) return;
+      stripAuthCallbackFromBrowserUrl();
+      if (ok) {
+        toast({ title: "Email confirmed", description: "You're signed in." });
+      } else if (error) {
+        toast({ title: "Could not complete sign-in", description: error, variant: "destructive" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [toast]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -122,7 +145,8 @@ export default function LoginPage() {
     }
     toast({
       title: "Account created",
-      description: "Check your email to confirm, or sign in if already confirmed.",
+      description:
+        "Check your email to confirm. If the link does nothing, add this site’s URL under Supabase → Authentication → URL Configuration → Redirect URLs (including http://localhost:8080/** for local dev).",
     });
     setActiveTab("login");
   }
@@ -160,15 +184,27 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <Label htmlFor="login-password">Password</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="mt-1.5"
-                    autoComplete="current-password"
-                  />
+                  <div className="relative mt-1.5">
+                    <Input
+                      id="login-password"
+                      type={showLoginPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pr-10"
+                      autoComplete="current-password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full rounded-l-none px-3 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowLoginPassword((v) => !v)}
+                      aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                    >
+                      {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Signing in…" : "Sign in"}
@@ -191,15 +227,27 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="At least 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="mt-1.5"
-                    autoComplete="new-password"
-                  />
+                  <div className="relative mt-1.5">
+                    <Input
+                      id="signup-password"
+                      type={showSignupPassword ? "text" : "password"}
+                      placeholder="At least 6 characters"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pr-10"
+                      autoComplete="new-password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full rounded-l-none px-3 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowSignupPassword((v) => !v)}
+                      aria-label={showSignupPassword ? "Hide password" : "Show password"}
+                    >
+                      {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Creating account…" : "Create account"}

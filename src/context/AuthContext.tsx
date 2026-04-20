@@ -46,6 +46,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const envSite = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "").trim();
     const origin =
       envSite || (typeof window !== "undefined" ? window.location.origin : "");
+    if (import.meta.env.PROD && !envSite) {
+      console.warn(
+        "[Festive Feast] Set VITE_SITE_URL in Vercel to your live https origin (e.g. https://christmasdecors.com.ph) so email confirmation matches production. Also set Supabase Auth Site URL + Redirect URLs to the same host."
+      );
+    }
     const { error } = await supabase.auth.signUp({
       email,
       password,

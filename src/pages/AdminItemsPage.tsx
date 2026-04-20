@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Pencil, Loader2 } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,7 +41,9 @@ import {
 import { slugifyText } from "@/lib/slugify";
 import { supabase } from "@/lib/supabase";
 import { useProducts } from "@/context/ProductsContext";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { uploadProductImageFile } from "@/lib/uploadProductImage";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_CATEGORIES: { value: string; label: string }[] = [
@@ -91,6 +94,7 @@ type VisibilityFilter = "all" | "visible" | "hidden";
 
 function AdminItemsContent() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { refetchProducts } = useProducts();
   const [categoryOptions, setCategoryOptions] = useState<{ value: string; label: string }[]>(DEFAULT_CATEGORIES);
   const [items, setItems] = useState<AdminItemRow[]>([]);
@@ -115,6 +119,7 @@ function AdminItemsContent() {
   const [materials, setMaterials] = useState("");
   const [dimensions, setDimensions] = useState("");
   const [stockCount, setStockCount] = useState("");
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   async function loadItems() {
     setLoadingItems(true);
@@ -251,6 +256,33 @@ function AdminItemsContent() {
     resetItemForm();
     setFormMode("add");
     setShowItemForm(true);
+  }
+
+  async function handleProductImageFiles(fileList: FileList | null) {
+    if (!fileList?.length) return;
+    if (!user?.id) {
+      toast({ title: "Sign in required", description: "Refresh and sign in as admin again.", variant: "destructive" });
+      return;
+    }
+    setUploadingImages(true);
+    const urls: string[] = [];
+    for (const file of Array.from(fileList)) {
+      const { url, error } = await uploadProductImageFile(user.id, file);
+      if (error) {
+        toast({ title: "Upload failed", description: error, variant: "destructive" });
+        setUploadingImages(false);
+        return;
+      }
+      if (url) urls.push(url);
+    }
+    if (urls.length > 0) {
+      setImagesRaw((prev) => {
+        const base = prev.trim();
+        return base ? `${base}\n${urls.join("\n")}` : urls.join("\n");
+      });
+      toast({ title: "Images uploaded", description: `${urls.length} public URL(s) added to the list below.` });
+    }
+    setUploadingImages(false);
   }
 
   function openEditForm(item: AdminItemRow) {
@@ -433,6 +465,13 @@ function AdminItemsContent() {
         <p className="text-sm text-zinc-500 dark:text-zinc-500">
           Add items to your products table. All fields marked required must be filled before saving.
         </p>
+        <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/80 p-4 text-sm text-zinc-800 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-zinc-200">
+          <p className="font-medium text-zinc-900 dark:text-zinc-100">Paano i-edit ang mga naka-post na product</p>
+          <p className="mt-1 text-zinc-700 dark:text-zinc-300">
+            Sa listahan sa ibaba, pindutin ang <strong>Edit</strong> sa row ng item, o <strong>right-click</strong> sa
+            pangalan para sa Edit / Hide / Delete. Ilagay ang corrections sa form, tapos <strong>Save changes</strong>.
+          </p>
+        </div>
       </div>
 
       <section className={card}>
@@ -473,14 +512,15 @@ function AdminItemsContent() {
                 <th className="py-2 pr-4">Price</th>
                 <th className="py-2 pr-4">Stock</th>
                 <th className="py-2 pr-4">Storefront</th>
-                <th className="py-2 pr-0">Updated</th>
+                <th className="py-2 pr-4">Updated</th>
+                <th className="py-2 pr-0 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.map((item) => (
                 <ContextMenu key={item.id}>
                   <ContextMenuTrigger asChild>
-                    <tr className="cursor-context-menu border-b border-zinc-200/80 dark:border-zinc-800/70">
+                    <tr className="cursor-context-menu border-b border-zinc-200/80 dark:border-zinc-800/70" title="Right-click row for more options">
                       <td className="py-2 pr-4" title="Right-click for Edit, Hide, or Delete">
                         <p className="font-medium text-zinc-900 dark:text-zinc-100">{item.name}</p>
                         <p className="text-xs text-zinc-500">{item.slug}</p>
@@ -515,8 +555,20 @@ function AdminItemsContent() {
                           {item.is_hidden ? "Hidden" : "Visible"}
                         </span>
                       </td>
-                      <td className="py-2 pr-0 text-zinc-600 dark:text-zinc-400">
+                      <td className="py-2 pr-4 text-zinc-600 dark:text-zinc-400">
                         {item.updated_at ? new Date(item.updated_at).toLocaleDateString("en-PH") : "—"}
+                      </td>
+                      <td className="py-2 pr-0 text-right">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 border-zinc-300 dark:border-zinc-600"
+                          onClick={() => openEditForm(item)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
+                        </Button>
                       </td>
                     </tr>
                   </ContextMenuTrigger>
@@ -676,11 +728,46 @@ function AdminItemsContent() {
             <Label htmlFor="item-images">
               Image URLs <span className="text-[#f43f5e]">*</span>
             </Label>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50/80 p-3 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-300">
+              <p className="font-medium text-zinc-900 dark:text-zinc-100">Lantern / product photos</p>
+              <ul className="mt-1 list-inside list-disc space-y-0.5">
+                <li>
+                  <strong>Upload dito:</strong> pumili ng JPEG/PNG/WebP (hanggang 5 MB bawat file). Kailangan muna sa
+                  Supabase SQL Editor ang migration na{" "}
+                  <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">20260415120000_product_images_bucket.sql</code>{" "}
+                  para gumana ang storage bucket na <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">product-images</code>.
+                </li>
+                <li>
+                  <strong>O kaya</strong> i-paste ang public URLs (CDN, Shopify, Google Drive direct link, atbp.) — isang
+                  URL kada linya, dapat nagsisimula sa <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">https://</code>.
+                </li>
+              </ul>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                id="item-images-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                disabled={uploadingImages}
+                className="max-w-md cursor-pointer text-sm file:mr-2 file:rounded-md file:border-0 file:bg-zinc-200 file:px-3 file:py-1.5 file:text-sm file:font-medium dark:file:bg-zinc-700"
+                onChange={(e) => {
+                  void handleProductImageFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              {uploadingImages ? (
+                <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Uploading…
+                </span>
+              ) : null}
+            </div>
             <Textarea
               id="item-images"
               value={imagesRaw}
               onChange={(e) => setImagesRaw(e.target.value)}
-              placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
+              placeholder={"https://example.com/parol-1.jpg\nhttps://example.com/parol-2.jpg"}
               rows={4}
               required
             />

@@ -76,7 +76,15 @@ Open the URL Vite prints (typically `http://localhost:8080`).
 | `VITE_SITE_URL` | `.env` / Vercel (client, optional) | Canonical **https** origin of the live app (no trailing slash), used as `emailRedirectTo` for **sign-up confirmation** emails. If unset, the value is taken from `window.location.origin` when the user submits the form (fine when they sign up on production). |
 | `SUPABASE_SERVICE_ROLE_KEY` | `.env` (local only, scripts + Vite dev plugin) | **Never** ship to the client bundle for production users. Used by `scripts/*.mjs`, Vite plugin for `/api/check-qrph-payment` in dev, and should be configured on Vercel for server routes |
 
-**Sign-up confirmation links:** Supabase can fall back to the dashboard **Site URL** (often still `localhost` after local dev). This app sends **`emailRedirectTo`** pointing at **`/login`** on `VITE_SITE_URL` if set, otherwise the browser’s current origin. In Supabase **Authentication → URL Configuration**, set **Site URL** to your production **https** origin and add that origin under **Redirect URLs** (wildcard `https://your-domain.com/**` is fine) so confirmation links are allowed.
+**Sign-up confirmation links (if the email still opens `localhost`):** The link is controlled by **(1) Supabase Auth URL settings** and **(2) this app’s `emailRedirectTo`**.
+
+1. **Supabase Dashboard → Authentication → URL Configuration**
+   - **Site URL:** set to your live site, e.g. `https://christmasdecors.com.ph` — **not** `http://localhost:8080`. If Site URL stays on localhost, some confirmation flows keep using it.
+   - **Redirect URLs:** add your production origin, e.g. `https://christmasdecors.com.ph/**` (and `https://www.christmasdecors.com.ph/**` if you use `www`). Supabase only allows redirects that match this list (plus Site URL).
+2. **Vercel → Project → Settings → Environment Variables (Production):** set **`VITE_SITE_URL`** to the same origin, e.g. `https://christmasdecors.com.ph` (no trailing slash). Redeploy so the client bundle includes it. Then `signUp` always sends `emailRedirectTo` to `https://christmasdecors.com.ph/login` even if someone hits a preview URL.
+3. This app already passes **`emailRedirectTo`** on `signUp` using `VITE_SITE_URL` when set, otherwise the browser’s origin when the user submits the form.
+
+Old confirmation emails already sent still point at whatever URL was encoded when they signed up; **new** sign-ups follow the steps above.
 
 PayMongo credentials belong in **Supabase Edge Function secrets**, not in `VITE_*` client env:
 
@@ -145,6 +153,8 @@ The script uses the Admin API to create Auth users (email pre-confirmed) and **u
 | `buyer@test.com` | `TestBuyer123!` | `false` | General shopper: cart, checkout, account |
 | `paytest@test.com` | `PayTest456!` | `false` | Payment / QR Ph testing |
 | `admin@test.com` | `AdminTest789!` | `true` | Admin dashboard, catalog, user role tools |
+| `admin2@test.com` | `AdminTwo890!` | `true` | Second admin account (same privileges) |
+| `superadmin@test.com` | `SuperAdmin901!` | `true` | Third admin account (same privileges) |
 
 **After seeding**, sign in at **`/login`**. Admins are sent toward **`/admin`**; customers use the storefront and **`/account/*`**.
 
