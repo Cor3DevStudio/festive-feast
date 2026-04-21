@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, Truck, ShieldCheck, Share2, Heart } from "lucide-react";
 import { formatPrice } from "@/data/products";
-import { getProductImage } from "@/data/productImages";
+import { getProductDisplayImageUrl } from "@/lib/productDisplayImage";
 import { cartLineKey } from "@/lib/cartLineKey";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
@@ -24,15 +24,28 @@ export default function ProductDetail() {
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [descOpen, setDescOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+
+  const galleryUrls = useMemo(
+    () =>
+      (product?.images ?? [])
+        .map((s) => String(s).trim())
+        .filter((s) => /^https?:\/\//i.test(s)),
+    [product?.images],
+  );
 
   useEffect(() => {
-    if (!product) return;
+    if (!product) {
+      setGalleryIndex(0);
+      return;
+    }
+    setGalleryIndex(0);
     if (product.sizes.length === 1) {
       setSelectedSize(product.sizes[0]);
     } else {
       setSelectedSize("");
     }
-  }, [product?.id]);
+  }, [product]);
 
   if (productsLoading) {
     return (
@@ -71,7 +84,8 @@ export default function ProductDetail() {
     );
   }
 
-  const image = getProductImage(product.id);
+  const mainImageSrc =
+    galleryUrls.length > 0 ? galleryUrls[galleryIndex] : getProductDisplayImageUrl(product);
 
   function resolvedProduct() {
     const size = selectedSize || product.sizes[0];
@@ -130,13 +144,30 @@ export default function ProductDetail() {
           {/* Image */}
           <div className="lg:col-span-3 lg:sticky lg:top-28 lg:self-start">
             <div className="relative aspect-square overflow-hidden rounded-lg bg-muted image-outline">
-              <img src={image} alt={product.name} className="h-full w-full object-cover" />
+              <img src={mainImageSrc} alt={product.name} className="h-full w-full object-cover" />
               {product.badge && (
                 <span className="absolute left-4 top-4 rounded-sm bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
                   {product.badge}
                 </span>
               )}
             </div>
+            {galleryUrls.length > 1 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {galleryUrls.map((url, i) => (
+                  <button
+                    key={url + i}
+                    type="button"
+                    onClick={() => setGalleryIndex(i)}
+                    className={`h-14 w-14 shrink-0 overflow-hidden rounded-md border-2 transition-colors ${
+                      i === galleryIndex ? "border-primary" : "border-transparent opacity-80 hover:opacity-100"
+                    }`}
+                    aria-label={`View image ${i + 1}`}
+                  >
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="mt-4 flex gap-3">
               <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
                 <Share2 className="h-4 w-4" /> Share

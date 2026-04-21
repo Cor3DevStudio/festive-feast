@@ -733,9 +733,9 @@ function AdminItemsContent() {
               <ul className="mt-1 list-inside list-disc space-y-0.5">
                 <li>
                   <strong>Upload dito:</strong> pumili ng JPEG/PNG/WebP (hanggang 5 MB bawat file). Kailangan muna sa
-                  Supabase SQL Editor ang migration na{" "}
-                  <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">20260415120000_product_images_bucket.sql</code>{" "}
-                  para gumana ang storage bucket na <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">product-images</code>.
+                  Supabase SQL Editor ang buong{" "}
+                  <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">supabase/schema.sql</code>{" "}
+                  (Storage → product-images) para gumana ang upload.
                 </li>
                 <li>
                   <strong>O kaya</strong> i-paste ang public URLs (CDN, Shopify, Google Drive direct link, atbp.) — isang

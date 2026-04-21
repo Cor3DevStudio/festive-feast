@@ -13,7 +13,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useCart, type CartItem } from "@/context/CartContext";
 import { formatPrice } from "@/data/products";
-import { getProductImage } from "@/data/productImages";
+import { getProductDisplayImageUrl } from "@/lib/productDisplayImage";
 import { cartLineKey } from "@/lib/cartLineKey";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -207,7 +207,7 @@ function CartPageContent() {
             {items.map((item) => {
               const key = cartLineKey(item.product.id, item.size);
               const lineTotal = item.product.price * item.quantity;
-              const img = getProductImage(item.product.id);
+              const img = getProductDisplayImageUrl(item.product);
               const isLineSelected = selected.has(key);
 
               return (

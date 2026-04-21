@@ -4,7 +4,8 @@ import { Package, ChevronDown, ChevronUp, ShoppingBag } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/data/products";
-import { getProductImage } from "@/data/productImages";
+import { useProducts } from "@/context/ProductsContext";
+import { getProductDisplayImageUrlById } from "@/lib/productDisplayImage";
 import AccountLayout from "@/components/account/AccountLayout";
 
 interface OrderItem {
@@ -70,6 +71,7 @@ function PaymentLabel({ method }: { method: string }) {
 
 export default function AccountOrdersPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { getProductById } = useProducts();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,7 +170,9 @@ export default function AccountOrdersPage() {
               });
               const isOpen = expanded === order.id;
               const firstItem = order.order_items[0];
-              const firstImage = firstItem ? getProductImage(firstItem.product_id) : null;
+              const firstImage = firstItem
+                ? getProductDisplayImageUrlById(firstItem.product_id, getProductById)
+                : null;
               const totalLineQty = order.order_items.reduce((sum, i) => sum + i.quantity, 0);
               const extraItemsCount = Math.max(0, order.order_items.length - 1);
 

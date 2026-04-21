@@ -97,12 +97,11 @@ supabase secrets set SUPABASE_SERVICE_ROLE_KEY=...   # if the function needs it
 
 ## Supabase database
 
-1. In the Supabase **SQL Editor**, run **`supabase/schema.sql`** to establish the base schema (including `profiles` with `is_admin`, orders, products-related tables, and RLS patterns used by the app).
-2. Apply migrations under **`supabase/migrations/`** in chronological order (filename prefix is the ordering hint).
+1. In the Supabase **SQL Editor**, run **`supabase/schema.sql` once** (single consolidated script). It creates or aligns **profiles** (including `is_admin`), **cart**, **orders**, **order_items**, **products**, **product_categories**, **RLS**, the **auth → profile** trigger + backfill, and **Storage** buckets **`avatars`** and **`product-images`** with policies.
 
-If an existing project already had an `orders` table **without** shipping columns, apply at least **`20250323150000_orders_shipping_and_payment_columns.sql`** (and related migrations). Missing columns commonly surface as errors such as missing `shipping_city` during checkout.
+2. Re-running the same file on an older project is supported for additive fixes (extra columns, policies, buckets). It does **not** replace the need to deploy **Edge Functions** under `supabase/functions/` separately.
 
-Without a correct schema and RLS, login, cart persistence, checkout, and admin screens will fail in ways that depend on which tables or policies are missing.
+Without a correct schema and RLS, login, cart persistence, checkout, admin catalog, and image uploads will fail depending on what is missing.
 
 ---
 
@@ -192,7 +191,7 @@ The script uses the Admin API to create Auth users (email pre-confirmed) and **u
 ## Roles: customer vs admin
 
 - **Customer:** any authenticated user. Access to own profile, addresses, orders, etc., is enforced by **RLS** on Supabase tables.
-- **Admin:** users whose row in **`public.profiles`** has **`is_admin = true`**. The app shows admin navigation and routes; sensitive writes (products, categories, etc.) must remain protected by **RLS policies** that require `is_admin` (see migrations and `supabase/schema.sql`). Existing admins can toggle other users’ admin flag from the admin UI where implemented.
+- **Admin:** users whose row in **`public.profiles`** has **`is_admin = true`**. The app shows admin navigation and routes; sensitive writes (products, categories, etc.) must remain protected by **RLS policies** that require `is_admin` (see `supabase/schema.sql`). Existing admins can toggle other users’ admin flag from the admin UI where implemented.
 
 ---
 

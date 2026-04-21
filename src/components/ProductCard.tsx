@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import type { Product } from "@/data/products";
 import { formatPrice } from "@/data/products";
-import { getProductImage } from "@/data/productImages";
+import { getProductDisplayImageUrl } from "@/lib/productDisplayImage";
 
 interface ProductCardProps {
   product: Product;
@@ -10,7 +10,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
-  const image = getProductImage(product.id);
+  const image = getProductDisplayImageUrl(product);
 
   return (
     <motion.div

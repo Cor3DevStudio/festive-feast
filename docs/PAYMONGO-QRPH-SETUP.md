@@ -4,7 +4,7 @@ This app uses **PayMongo** for QR Ph (scan-to-pay). The **secret key** is only u
 
 ## 1. Apply database change
 
-In **Supabase Dashboard → SQL Editor**, run the migration that adds `payment_intent_id` and the update policy (see `supabase/schema.sql`). If you already ran the full schema, run only:
+In **Supabase Dashboard → SQL Editor**, run **`supabase/schema.sql`** (includes `payment_intent_id` and order update policies). If you already ran the full schema, run only:
 
 ```sql
 alter table public.orders add column if not exists payment_intent_id text;

@@ -29,7 +29,7 @@ export async function uploadAvatarFile(userId: string, file: File): Promise<{ ur
       url: null,
       error:
         upErr.message?.includes("Bucket not found") || upErr.message?.includes("not found")
-          ? "Avatar storage is not set up yet. Run the latest Supabase migration or create the avatars bucket."
+          ? "Avatar storage is not set up yet. In Supabase SQL Editor, run supabase/schema.sql (Storage → avatars bucket)."
           : upErr.message,
     };
   }

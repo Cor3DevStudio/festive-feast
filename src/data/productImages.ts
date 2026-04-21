@@ -1,3 +1,7 @@
+/**
+ * Bundled placeholder images keyed by legacy demo product id.
+ * Storefront prefers `Product.images` from the database; this map is only a fallback.
+ */
 import productParol1 from "@/assets/product-parol-1.jpg";
 import productParol2 from "@/assets/product-parol-2.jpg";
 import productParol3 from "@/assets/product-parol-3.jpg";

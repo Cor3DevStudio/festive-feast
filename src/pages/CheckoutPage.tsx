@@ -5,7 +5,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { PH_PROVINCES } from "@/data/phProvinces";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/data/products";
-import { getProductImage } from "@/data/productImages";
+import { getProductDisplayImageUrl } from "@/lib/productDisplayImage";
 import { supabase } from "@/lib/supabase";
 import { createQrPhPayment, checkQrPhPayment } from "@/lib/paymongo-qrph";
 import { cartLineKey } from "@/lib/cartLineKey";
@@ -554,7 +554,7 @@ export default function CheckoutPage() {
                 {checkoutItems.map((item) => (
                   <div key={`${item.product.id}-${item.size}`} className="flex gap-3">
                     <img
-                      src={getProductImage(item.product.id)}
+                      src={getProductDisplayImageUrl(item.product)}
                       alt={item.product.name}
                       className="h-14 w-14 rounded-md object-cover image-outline shrink-0"
                     />
