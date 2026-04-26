@@ -49,10 +49,11 @@ const supabase = createClient(url, serviceRoleKey, {
 const TEST_ACCOUNTS = [
   { email: "buyer@test.com", password: "TestBuyer123!", isAdmin: false, fullName: "Buyer Test" },
   { email: "paytest@test.com", password: "PayTest456!", isAdmin: false, fullName: "Payment Tester" },
-  // Admin logins: same Supabase Auth + /login; profiles.is_admin routes to /admin after sign-in.
-  { email: "admin@test.com", password: "AdminTest789!", isAdmin: true, fullName: "Admin Test" },
-  { email: "admin2@test.com", password: "AdminTwo890!", isAdmin: true, fullName: "Second Admin" },
-  { email: "superadmin@test.com", password: "SuperAdmin901!", isAdmin: true, fullName: "Super Admin" },
+  // Admin 1–4: sign in at /login with any of these; profiles.is_admin → /admin after sign-in.
+  { email: "admin1@test.com", password: "FestiveAdmin1!", isAdmin: true, fullName: "Admin Account 1" },
+  { email: "admin2@test.com", password: "FestiveAdmin2!", isAdmin: true, fullName: "Admin Account 2" },
+  { email: "admin3@test.com", password: "FestiveAdmin3!", isAdmin: true, fullName: "Admin Account 3" },
+  { email: "admin4@test.com", password: "FestiveAdmin4!", isAdmin: true, fullName: "Admin Account 4" },
 ];
 
 async function main() {

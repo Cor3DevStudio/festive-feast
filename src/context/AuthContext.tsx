@@ -7,7 +7,11 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    names?: { firstName: string; lastName: string }
+  ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -42,28 +46,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error ?? null };
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    const envSite = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "").trim();
-    const origin =
-      envSite || (typeof window !== "undefined" ? window.location.origin : "");
-    if (import.meta.env.PROD && !envSite) {
-      console.warn(
-        "[Festive Feast] Set VITE_SITE_URL in Vercel to your live https origin (e.g. https://christmasdecors.com.ph) so email confirmation matches production. Also set Supabase Auth Site URL + Redirect URLs to the same host."
-      );
-    }
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      ...(origin
-        ? {
-            options: {
-              emailRedirectTo: `${origin}/login`,
-            },
-          }
-        : {}),
-    });
-    return { error: error ?? null };
-  }, []);
+  const signUp = useCallback(
+    async (email: string, password: string, names?: { firstName: string; lastName: string }) => {
+      const envSite = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "").trim();
+      const origin =
+        envSite || (typeof window !== "undefined" ? window.location.origin : "");
+      if (import.meta.env.PROD && !envSite) {
+        console.warn(
+          "[Festive Feast] Set VITE_SITE_URL in Vercel to your live https origin (e.g. https://christmasdecors.com.ph) so email confirmation matches production. Also set Supabase Auth Site URL + Redirect URLs to the same host."
+        );
+      }
+      const options: { emailRedirectTo?: string; data?: Record<string, string> } = {};
+      if (origin) options.emailRedirectTo = `${origin}/login`;
+      if (names) {
+        options.data = {
+          first_name: names.firstName.trim(),
+          last_name: names.lastName.trim(),
+        };
+      }
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        ...(Object.keys(options).length > 0 ? { options } : {}),
+      });
+      return { error: error ?? null };
+    },
+    []
+  );
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();

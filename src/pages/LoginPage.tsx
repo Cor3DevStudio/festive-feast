@@ -23,6 +23,8 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [signupFirstName, setSignupFirstName] = useState("");
+  const [signupLastName, setSignupLastName] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -128,6 +130,10 @@ export default function LoginPage() {
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
+    if (!signupFirstName.trim() || !signupLastName.trim()) {
+      toast({ title: "First and last name required", variant: "destructive" });
+      return;
+    }
     if (!email.trim() || !password) {
       toast({ title: "Email and password required", variant: "destructive" });
       return;
@@ -137,7 +143,10 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    const { error } = await signUp(email.trim(), password);
+    const { error } = await signUp(email.trim(), password, {
+      firstName: signupFirstName.trim(),
+      lastName: signupLastName.trim(),
+    });
     setLoading(false);
     if (error) {
       toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
@@ -213,6 +222,32 @@ export default function LoginPage() {
             </TabsContent>
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="mt-6 space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="signup-first-name">First name</Label>
+                    <Input
+                      id="signup-first-name"
+                      type="text"
+                      placeholder="Juan"
+                      value={signupFirstName}
+                      onChange={(e) => setSignupFirstName(e.target.value)}
+                      className="mt-1.5"
+                      autoComplete="given-name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="signup-last-name">Last name</Label>
+                    <Input
+                      id="signup-last-name"
+                      type="text"
+                      placeholder="Dela Cruz"
+                      value={signupLastName}
+                      onChange={(e) => setSignupLastName(e.target.value)}
+                      className="mt-1.5"
+                      autoComplete="family-name"
+                    />
+                  </div>
+                </div>
                 <div>
                   <Label htmlFor="signup-email">Email</Label>
                   <Input

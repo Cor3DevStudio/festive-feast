@@ -151,9 +151,10 @@ The script uses the Admin API to create Auth users (email pre-confirmed) and **u
 |-------|----------|---------------------|----------------|
 | `buyer@test.com` | `TestBuyer123!` | `false` | General shopper: cart, checkout, account |
 | `paytest@test.com` | `PayTest456!` | `false` | Payment / QR Ph testing |
-| `admin@test.com` | `AdminTest789!` | `true` | Admin dashboard, catalog, user role tools |
-| `admin2@test.com` | `AdminTwo890!` | `true` | Second admin account (same privileges) |
-| `superadmin@test.com` | `SuperAdmin901!` | `true` | Third admin account (same privileges) |
+| `admin1@test.com` | `FestiveAdmin1!` | `true` | Admin account 1 — dashboard, catalog, messages |
+| `admin2@test.com` | `FestiveAdmin2!` | `true` | Admin account 2 (same privileges) |
+| `admin3@test.com` | `FestiveAdmin3!` | `true` | Admin account 3 (same privileges) |
+| `admin4@test.com` | `FestiveAdmin4!` | `true` | Admin account 4 (same privileges) |
 
 **After seeding**, sign in at **`/login`**. Admins are sent toward **`/admin`**; customers use the storefront and **`/account/*`**.
 
