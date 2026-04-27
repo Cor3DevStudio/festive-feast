@@ -51,7 +51,7 @@ export async function createQrPhPayment(
     return { data: null, error: new Error("Not authenticated") };
   }
 
-  if (import.meta.env.DEV) {
+  const invokeCreateDirect = async () => {
     const { data, error } = await supabase.functions.invoke("create-qrph-payment", {
       body: params,
       headers: {
@@ -65,6 +65,10 @@ export async function createQrPhPayment(
 
     const result = data as CreateQrPhPaymentResult | { error?: string } | null;
     return parseQrPhResponse(result);
+  };
+
+  if (import.meta.env.DEV) {
+    return invokeCreateDirect();
   }
 
   const bearer = `Bearer ${token}`;
@@ -82,6 +86,11 @@ export async function createQrPhPayment(
     | CreateQrPhPaymentResult
     | { error?: string };
   if (!res.ok) {
+    // Production fallback: if Vercel proxy cannot validate the user JWT
+    // (often env mismatch or expired edge deployment), try direct Edge Function call.
+    if (res.status === 401 || res.status === 403) {
+      return invokeCreateDirect();
+    }
     return {
       data: null,
       error: new Error((result as { error?: string }).error ?? `Request failed (${res.status})`),
@@ -154,7 +163,7 @@ export async function checkQrPhPayment(
   }
 
   try {
-    if (import.meta.env.DEV) {
+    const invokeCheckDirect = async () => {
       const { data, error } = await supabase.functions.invoke("check-qrph-payment", {
         body: { order_id: orderId },
         headers: {
@@ -166,6 +175,10 @@ export async function checkQrPhPayment(
         return fallbackOrderPaidStatus(orderId);
       }
       return parseCheckResponse(data);
+    };
+
+    if (import.meta.env.DEV) {
+      return invokeCheckDirect();
     }
 
     const bearer = `Bearer ${token}`;
@@ -181,6 +194,9 @@ export async function checkQrPhPayment(
 
     const result = (await res.json().catch(() => ({}))) as CheckQrPhPaymentResult | { error?: string };
     if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        return invokeCheckDirect();
+      }
       return fallbackOrderPaidStatus(orderId);
     }
     return parseCheckResponse(result);

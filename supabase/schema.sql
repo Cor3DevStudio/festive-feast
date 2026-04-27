@@ -326,8 +326,49 @@ create table if not exists public.products (
   updated_at timestamptz default now()
 );
 
+-- Older projects may still have numeric `products.id` (bigint/int). Convert it to text
+-- so admin-generated ids like `p_xxx...` can be inserted safely.
+do $$
+declare
+  id_type text;
+begin
+  select data_type
+  into id_type
+  from information_schema.columns
+  where table_schema = 'public'
+    and table_name = 'products'
+    and column_name = 'id';
+
+  if id_type in ('smallint', 'integer', 'bigint', 'numeric') then
+    alter table public.products
+      alter column id type text using id::text;
+    alter table public.products
+      alter column id drop default;
+  end if;
+end;
+$$;
+
 alter table public.products add column if not exists slug text;
 alter table public.products add column if not exists is_hidden boolean not null default false;
+-- Backfill columns for older projects that created `products` before newer fields existed.
+alter table public.products add column if not exists price int not null default 0;
+alter table public.products add column if not exists price_range_min int;
+alter table public.products add column if not exists price_range_max int;
+alter table public.products add column if not exists size_prices jsonb;
+alter table public.products add column if not exists description text not null default '';
+alter table public.products add column if not exists full_description text not null default '';
+alter table public.products add column if not exists sizes text[] not null default '{}';
+alter table public.products add column if not exists images text[] not null default '{}';
+alter table public.products add column if not exists badge text;
+alter table public.products add column if not exists in_stock boolean not null default true;
+alter table public.products add column if not exists stock_count int;
+alter table public.products add column if not exists materials text;
+alter table public.products add column if not exists dimensions text;
+alter table public.products add column if not exists sort_order int not null default 0;
+alter table public.products add column if not exists created_at timestamptz default now();
+alter table public.products add column if not exists updated_at timestamptz default now();
+-- Refresh PostgREST schema cache immediately after DDL changes.
+notify pgrst, 'reload schema';
 
 update public.products
 set slug = 'item-' || id

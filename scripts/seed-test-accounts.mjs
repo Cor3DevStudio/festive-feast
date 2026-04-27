@@ -59,6 +59,7 @@ const TEST_ACCOUNTS = [
 async function main() {
   console.log("Creating test accounts...\n");
   for (const { email, password, isAdmin, fullName } of TEST_ACCOUNTS) {
+    let alreadyExists = false;
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -67,6 +68,7 @@ async function main() {
     let userId = data?.user?.id;
 
     if (!userId && error?.message.includes("already been registered")) {
+      alreadyExists = true;
       const { data: usersPage, error: listErr } = await supabase.auth.admin.listUsers({
         page: 1,
         perPage: 200,
@@ -77,6 +79,15 @@ async function main() {
     }
 
     if (userId) {
+      if (alreadyExists) {
+        const { error: updateUserError } = await supabase.auth.admin.updateUserById(userId, {
+          password,
+          email_confirm: true,
+        });
+        if (updateUserError) {
+          console.error(`  ${email} – failed to reset password: ${updateUserError.message}`);
+        }
+      }
       const username = email.split("@")[0];
       const { error: profileUpsertError } = await supabase.from("profiles").upsert(
         {
