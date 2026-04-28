@@ -8,6 +8,7 @@ import { formatPrice } from "@/data/products";
 import { getProductDisplayImageUrl } from "@/lib/productDisplayImage";
 import { supabase } from "@/lib/supabase";
 import { createQrPhPayment, checkQrPhPayment } from "@/lib/paymongo-qrph";
+import { sendOrderConfirmationEmail } from "@/lib/orderConfirmationEmail";
 import { cartLineKey } from "@/lib/cartLineKey";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -288,6 +289,10 @@ export default function CheckoutPage() {
         setLoading(false);
         return;
       }
+
+      void sendOrderConfirmationEmail(order.id).then(({ error: mailErr }) => {
+        if (mailErr) console.warn("Order confirmation email:", mailErr.message);
+      });
 
       const purchasedLines = checkoutItems.map((i) => ({
         productId: i.product.id,

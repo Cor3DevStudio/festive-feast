@@ -54,6 +54,7 @@ export function AdminSidebarNav({ onCloseMobile }: AdminSidebarNavProps) {
   const tab = parseDashboardTab(location.search);
   const isItemsRoute = location.pathname.startsWith("/admin/items");
   const isCategoriesRoute = location.pathname.startsWith("/admin/categories");
+  const isOrdersRoute = location.pathname.startsWith("/admin/orders");
   const isDashboardRoute = location.pathname === "/admin" || location.pathname === "/admin/";
 
   const close = () => onCloseMobile?.();
@@ -65,7 +66,7 @@ export function AdminSidebarNav({ onCloseMobile }: AdminSidebarNavProps) {
       </p>
       <Link
         to="/admin"
-        className={navBtn(isDashboardRoute && tab === "overview" && !isItemsRoute)}
+        className={navBtn(isDashboardRoute && tab === "overview" && !isItemsRoute && !isOrdersRoute)}
         onClick={close}
       >
         <LayoutDashboard className="h-4 w-4 shrink-0" />
@@ -73,7 +74,7 @@ export function AdminSidebarNav({ onCloseMobile }: AdminSidebarNavProps) {
       </Link>
       <Link
         to="/admin?tab=analytics"
-        className={navBtn(isDashboardRoute && tab === "analytics" && !isItemsRoute)}
+        className={navBtn(isDashboardRoute && tab === "analytics" && !isItemsRoute && !isOrdersRoute)}
         onClick={close}
       >
         <BarChart3 className="h-4 w-4 shrink-0" />
@@ -91,10 +92,17 @@ export function AdminSidebarNav({ onCloseMobile }: AdminSidebarNavProps) {
         <CollapsibleContent className="space-y-0.5 pl-2">
           <Link
             to="/admin"
-            className={subLink(isDashboardRoute && tab === "overview" && !isItemsRoute)}
+            className={subLink(isDashboardRoute && tab === "overview" && !isItemsRoute && !isOrdersRoute)}
             onClick={close}
           >
             Order snapshot
+          </Link>
+          <Link
+            to="/admin/orders"
+            className={subLink(isOrdersRoute)}
+            onClick={close}
+          >
+            Orders & customers
           </Link>
           <Link
             to="/admin/items"
@@ -117,7 +125,7 @@ export function AdminSidebarNav({ onCloseMobile }: AdminSidebarNavProps) {
 
       <Link
         to="/admin?tab=users"
-        className={navBtn(isDashboardRoute && tab === "users" && !isItemsRoute)}
+        className={navBtn(isDashboardRoute && tab === "users" && !isItemsRoute && !isOrdersRoute)}
         onClick={close}
       >
         <Users className="h-4 w-4 shrink-0" />
@@ -129,7 +137,7 @@ export function AdminSidebarNav({ onCloseMobile }: AdminSidebarNavProps) {
       </p>
       <Link
         to="/admin?tab=audit"
-        className={navBtn(isDashboardRoute && tab === "audit" && !isItemsRoute)}
+        className={navBtn(isDashboardRoute && tab === "audit" && !isItemsRoute && !isOrdersRoute)}
         onClick={close}
       >
         <Activity className="h-4 w-4 shrink-0" />

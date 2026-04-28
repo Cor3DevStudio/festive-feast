@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { checkQrPhDevProxy } from "./vite-plugin-check-qrph-dev";
+import { sendOrderEmailDevProxy } from "./vite-plugin-send-order-email-dev";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -39,6 +40,7 @@ export default defineConfig(({ mode }) => {
       react(),
       mode === "development" && componentTagger(),
       mode === "development" && checkQrPhDevProxy(env),
+      mode === "development" && sendOrderEmailDevProxy(env),
     ].filter(Boolean),
     resolve: {
       alias: {

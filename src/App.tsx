@@ -23,6 +23,7 @@ import AccountRewardsPage from "./pages/AccountRewardsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminItemsPage from "./pages/AdminItemsPage";
 import AdminCategoriesPage from "./pages/AdminCategoriesPage";
+import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import PrivacyPage from "./pages/PrivacyPage";
@@ -69,6 +70,7 @@ const App = () => (
               <Route path="/admin" element={<AdminDashboardPage />} />
               <Route path="/admin/items" element={<AdminItemsPage />} />
               <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+              <Route path="/admin/orders" element={<AdminOrdersPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />

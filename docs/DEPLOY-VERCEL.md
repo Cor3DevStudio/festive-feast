@@ -29,6 +29,7 @@ The app calls Supabase Edge Functions. Deploy them and apply the config that ski
 ```bash
 cd e:\CoreDev\Projects\festive-feast
 supabase functions deploy create-qrph-payment
+supabase functions deploy check-qrph-payment
 supabase functions deploy paymongo-webhook
 ```
 
@@ -44,6 +45,13 @@ Set Supabase secrets (Dashboard → Edge Functions → Secrets or CLI):
 - `PAYMONGO_SECRET_KEY` – required for QR Ph payments
 - `PAYMONGO_WEBHOOK_SECRET` – optional, for webhook signature verification
 
+**Order confirmation emails** use **your Gmail** via Vercel `api/send-order-confirmation` (not Supabase Edge). Set on Vercel:
+
+- `GMAIL_USER` – your Gmail address
+- `GMAIL_APP_PASSWORD` – Google [App Password](https://support.google.com/accounts/answer/185833)
+
+Optional: `STORE_NAME`, `SITE_PUBLIC_URL` — see `docs/ORDER-EMAIL-SETUP.md`.
+
 ## 4. Deploy the frontend to Vercel
 
 ```bash
@@ -58,4 +66,5 @@ Or `npx vercel --prod`. After any code changes, run `npm run deploy` again to re
 
 - Open the Vercel URL and test login, cart, and checkout.
 - **QR Ph flow:** The Vercel API route validates your JWT and calls the Edge Function with the service role + `user_id`, so 401 from “JWT not reaching Supabase” is fixed. Ensure `SUPABASE_SERVICE_ROLE_KEY` is set in Vercel.
-- Redeploy the Edge Function after any change: `supabase functions deploy create-qrph-payment`.
+- **Order confirmation email:** After checkout, the app calls `/api/send-order-confirmation`, which sends mail via **Gmail SMTP**. Set `GMAIL_USER` and `GMAIL_APP_PASSWORD` on Vercel (see `docs/ORDER-EMAIL-SETUP.md`).
+- Redeploy Edge Functions after changes: `supabase functions deploy create-qrph-payment`, etc.

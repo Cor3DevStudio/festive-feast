@@ -18,5 +18,10 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "vite-plugin-check-qrph-dev.ts"]
+  "include": [
+    "vite.config.ts",
+    "vite-plugin-check-qrph-dev.ts",
+    "vite-plugin-send-order-email-dev.ts",
+    "lib/orderConfirmationGmail.ts"
+  ]
 }
